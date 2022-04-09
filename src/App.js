@@ -1,24 +1,49 @@
-import logo from './logo.svg';
-import './App.css';
+import { QueryClient, QueryClientProvider } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthProvider";
+import RequireAuth from "./auth/RequireAuth";
+import Navigation from "./components/Navigation";
+import CreateAccount from "./pages/CreateAccount";
+import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import TransactionDetails from "./pages/TransactionDetails";
 
+const queryClient = new QueryClient();
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="font-main">
+        <AuthProvider>
+          <Navigation />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<CreateAccount />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireAuth redirectTo="/login">
+                    <Dashboard />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/transaction/:loopId"
+                element={
+                  <RequireAuth redirectTo="/login">
+                    <TransactionDetails />
+                  </RequireAuth>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </div>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 
