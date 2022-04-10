@@ -20,9 +20,6 @@ const Dashboard = () => {
     () => getLoops(page),
     { keepPreviousData: true }
   );
-  console.log(page);
-
-  console.log(data);
 
   useEffect(() => {
     if (data && currentUser) {

@@ -45,28 +45,15 @@ const TransactionDetails = () => {
   const { data, isLoading } = useQuery("loopDetails", getLoopDetails);
   const { data: allUsers } = useQuery("userList", getUsers);
 
-  // useEffect(() => {
-  //   // axios.get(getLoopDetailsUrl).then((res) => {
-  //   //   setDetails(res.data);
-  //   // });
-  //   getDocs(collection(db, "users"))
-  //     .then((docs) => {
-  //       let userList = [];
-  //       docs.forEach((doc) => userList.push({ ...doc.data(), id: doc.id }));
-  //       return userList;
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, []);
-
   useEffect(() => {
-    if (authUser) {
+    if (authUser && data?.sections?.Financials?.purchasePrice) {
       setAgentOne({
         id: authUser?.uid,
         firstName: currentUser?.firstName,
         lastName: currentUser?.lastName,
         commissionSplitPercentage: 100,
         commissionTotal: getCommissionTotal(
-          data?.sections.Financials?.purchasePrice,
+          data?.sections?.Financials?.purchasePrice,
           totalCommissionPercentage,
           100,
           100
@@ -77,7 +64,7 @@ const TransactionDetails = () => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser]);
+  }, [authUser, data?.sections?.Financials?.purchasePrice]);
 
   let formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -153,18 +140,6 @@ const TransactionDetails = () => {
         -1 ||
       user.lastName?.toLowerCase().indexOf(agentSearch?.toLowerCase()) !== -1
   );
-
-  const checkDone = () => {
-    if (agentTwo || agentThree) {
-      setTimeout(checkDone, 100);
-    } else {
-      setLoading(false);
-      setSuccess("Commission has been added successfully!");
-      setTimeout(() => {
-        setSuccess(null);
-      }, 1000);
-    }
-  };
 
   const addCommission = (e) => {
     e.preventDefault();
@@ -283,7 +258,7 @@ const TransactionDetails = () => {
             </div>
             <div className="w-full p-3 text-center">
               <div className="text-center font-semibold">Seller</div>
-              <div className="">Name: {data.sections.Seller?.Name}</div>
+              <div className="">Name: {data?.sections?.Seller?.Name}</div>
               <div className="">
                 Agent: {data.sections["Listing Agent"]?.Name}
               </div>
@@ -320,7 +295,7 @@ const TransactionDetails = () => {
                 </div>
               </div>
 
-              {agentOne && (
+              {data.sections.Financials.purchasePrice ? (
                 <CommissionForm
                   agent={agentOne}
                   setAgent={setAgentOne}
@@ -329,6 +304,8 @@ const TransactionDetails = () => {
                   setError={setError}
                   agentOne={true}
                 />
+              ) : (
+                <div>Loading...</div>
               )}
               {agentTwo && (
                 <CommissionForm

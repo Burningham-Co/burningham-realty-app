@@ -72,9 +72,7 @@ const CommissionForm = ({
     const b = parseFloat(percent);
     const c = parseInt(fee);
     const d = parseInt(split);
-    console.log(a, b, c, d);
     const total = a * (b / 100) * (d / 100) - c;
-    console.log(total);
     setCommissionTotal(total);
   };
 
