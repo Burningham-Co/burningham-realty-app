@@ -7,9 +7,10 @@ import {
   arrayUnion,
 } from "firebase/firestore";
 import React, { useContext, useEffect, useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery, useQueryClient } from "react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../auth/AuthProvider";
+import AddedCommission from "../components/AddedCommission";
 import CommissionForm from "../components/CommissionForm";
 import Modal from "../components/Modal";
 import { db } from "../firebase/config";
@@ -24,6 +25,8 @@ const TransactionDetails = () => {
   const [agentOne, setAgentOne] = useState(null);
   const [agentTwo, setAgentTwo] = useState(null);
   const [agentThree, setAgentThree] = useState(null);
+
+  const queryClient = useQueryClient();
 
   const [totalCommissionPercentage, setTotalCommissionPercentage] = useState(3);
   const navigate = useNavigate();
@@ -141,6 +144,15 @@ const TransactionDetails = () => {
       user.lastName?.toLowerCase().indexOf(agentSearch?.toLowerCase()) !== -1
   );
 
+  const selectedUser = allUsers?.filter((user) => user.id === authUser?.uid);
+  const userTransaction = selectedUser
+    ? selectedUser[0]?.transactions?.filter(
+        (trans) => trans.dotLoop.loopId === data?.loopId
+      )
+    : null;
+
+  console.log(userTransaction);
+
   const addCommission = (e) => {
     e.preventDefault();
 
@@ -167,6 +179,7 @@ const TransactionDetails = () => {
                     { merge: true }
                   )
                     .then(() => {
+                      queryClient.invalidateQueries("userList");
                       setAgentThree(null);
                       setLoading(false);
                       setSuccess("Commission has been added successfully!");
@@ -181,6 +194,7 @@ const TransactionDetails = () => {
                       );
                     });
                 } else {
+                  queryClient.invalidateQueries("userList");
                   setLoading(false);
                   setSuccess("Commission has been added successfully!");
                   setTimeout(() => {
@@ -195,6 +209,7 @@ const TransactionDetails = () => {
                 );
               });
           } else {
+            queryClient.invalidateQueries("userList");
             setLoading(false);
             setSuccess("Commission has been added successfully!");
             setTimeout(() => {
@@ -264,129 +279,138 @@ const TransactionDetails = () => {
               </div>
             </div>
           </div>
-          <div className="flex justify-center">
-            <div className="font-conf max-w-full sm:max-w-2xl w-full bg-white px-7 py-6 rounded my-5 sm:my-0 mx-2 sm:mx-0">
-              <div className="text-xl relative font-semibold before:absolute before:h-1 before:left-0 before:bottom-0 before:content-[''] before:w-7 before:bg-red-900">
-                Add Commission
-              </div>
-
-              <div className=" w-full mb-4 grid-rows-2 relative">
-                <div className="data w-full text-center">
-                  <span className="data w-full text-center">
-                    Edit Total Commission Percentage
-                  </span>
+          {userTransaction?.length > 0 ? (
+            <AddedCommission transaction={userTransaction} />
+          ) : (
+            <div className="flex justify-center">
+              <div className="font-conf max-w-full sm:max-w-2xl w-full bg-white px-7 py-6 rounded my-5 sm:my-0 mx-2 sm:mx-0">
+                <div className="text-xl relative font-semibold before:absolute before:h-1 before:left-0 before:bottom-0 before:content-[''] before:w-7 before:bg-red-900">
+                  Add Commission
                 </div>
 
-                <div className="relative w-full flex justify-center">
-                  <div className="absolute  right-[45%] top-1/4">%</div>
+                <div className=" w-full mb-4 grid-rows-2 relative">
+                  <div className="data w-full text-center">
+                    <span className="data w-full text-center">
+                      Edit Total Commission Percentage
+                    </span>
+                  </div>
 
-                  <input
-                    name="commissionPercentage"
-                    className=" w-24"
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    defaultValue={3}
-                    onChange={(e) =>
-                      setTotalCommissionPercentage(e.target.value)
-                    }
-                    required
+                  <div className="relative w-full flex justify-center">
+                    <div className="absolute  right-[45%] top-1/4">%</div>
+
+                    <input
+                      name="commissionPercentage"
+                      className=" w-24"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      defaultValue={3}
+                      onChange={(e) =>
+                        setTotalCommissionPercentage(e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                {data.sections.Financials.purchasePrice ? (
+                  <CommissionForm
+                    agent={agentOne}
+                    setAgent={setAgentOne}
+                    totalCommissionPercentage={totalCommissionPercentage}
+                    setTotalCommissionPercentage={setTotalCommissionPercentage}
+                    setError={setError}
+                    agentOne={true}
                   />
-                </div>
-              </div>
-
-              {data.sections.Financials.purchasePrice ? (
-                <CommissionForm
-                  agent={agentOne}
-                  setAgent={setAgentOne}
-                  totalCommissionPercentage={totalCommissionPercentage}
-                  setTotalCommissionPercentage={setTotalCommissionPercentage}
-                  setError={setError}
-                  agentOne={true}
-                />
-              ) : (
-                <div>Loading...</div>
-              )}
-              {agentTwo && (
-                <CommissionForm
-                  agent={agentTwo}
-                  totalCommissionPercentage={totalCommissionPercentage}
-                  setAgent={setAgentTwo}
-                  setError={setError}
-                />
-              )}
-              {agentThree && (
-                <CommissionForm
-                  agent={agentThree}
-                  totalCommissionPercentage={totalCommissionPercentage}
-                  setAgent={setAgentThree}
-                  setError={setError}
-                />
-              )}
-              {showAddSplit && (
-                <Modal setShow={setShowAddSplit}>
-                  <div className="text-2xl relative font-semibold before:absolute before:h-1 before:left-0 before:bottom-0 before:content-[''] before:w-7 before:bg-red-900">
-                    Add Agent for Split
-                  </div>
-                  <form id="addSplitForm" name="addSplitForm">
-                    <div className="flex max-h-[300px] overflow-y-scroll sm:overflow-visible sm:max-h-full flex-wrap justify-center mx-0 mt-5 mb-3">
-                      <div className="input-box ">
-                        <span className="data">Search Agent Name</span>
-                        <input
-                          name="agent"
-                          type="text"
-                          placeholder="Search Agent Name"
-                          onChange={handleSearch}
-                          required
-                        />
-                      </div>
+                ) : (
+                  <div>Loading...</div>
+                )}
+                {agentTwo && (
+                  <CommissionForm
+                    agent={agentTwo}
+                    totalCommissionPercentage={totalCommissionPercentage}
+                    setAgent={setAgentTwo}
+                    setError={setError}
+                  />
+                )}
+                {agentThree && (
+                  <CommissionForm
+                    agent={agentThree}
+                    totalCommissionPercentage={totalCommissionPercentage}
+                    setAgent={setAgentThree}
+                    setError={setError}
+                  />
+                )}
+                {showAddSplit && (
+                  <Modal setShow={setShowAddSplit}>
+                    <div className="text-2xl relative font-semibold before:absolute before:h-1 before:left-0 before:bottom-0 before:content-[''] before:w-7 before:bg-red-900">
+                      Add Agent for Split
                     </div>
-                  </form>
-                  <div className="container mx-auto flex-row justify-center w-full max-h-[150px] overflow-y-hidden">
-                    {filteredAgents?.map((agent) => (
-                      <button
-                        key={agent.id}
-                        className="btn w-full my-1"
-                        onClick={(e) =>
-                          addSplit(e, agent.id, agent.firstName, agent.lastName)
-                        }
-                      >{`${agent.firstName} ${agent.lastName}`}</button>
-                    ))}
+                    <form id="addSplitForm" name="addSplitForm">
+                      <div className="flex max-h-[300px] overflow-y-scroll sm:overflow-visible sm:max-h-full flex-wrap justify-center mx-0 mt-5 mb-3">
+                        <div className="input-box ">
+                          <span className="data">Search Agent Name</span>
+                          <input
+                            name="agent"
+                            type="text"
+                            placeholder="Search Agent Name"
+                            onChange={handleSearch}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </form>
+                    <div className="container mx-auto flex-row justify-center w-full max-h-[150px] overflow-y-hidden">
+                      {filteredAgents?.map((agent) => (
+                        <button
+                          key={agent.id}
+                          className="btn w-full my-1"
+                          onClick={(e) =>
+                            addSplit(
+                              e,
+                              agent.id,
+                              agent.firstName,
+                              agent.lastName
+                            )
+                          }
+                        >{`${agent.firstName} ${agent.lastName}`}</button>
+                      ))}
+                    </div>
+                  </Modal>
+                )}
+                {error && (
+                  <div className="font-bold text-red-700 text-center">
+                    {error}
                   </div>
-                </Modal>
-              )}
-              {error && (
-                <div className="font-bold text-red-700 text-center">
-                  {error}
+                )}
+                {success && (
+                  <div className="font-bold text-lime-700 text-center">
+                    {success}
+                  </div>
+                )}
+                <div className="flex justify-end w-full">
+                  {!agentThree && (
+                    <button onClick={() => setShowAddSplit(true)}>
+                      Add Agent Split
+                    </button>
+                  )}
                 </div>
-              )}
-              {success && (
-                <div className="font-bold text-lime-700 text-center">
-                  {success}
-                </div>
-              )}
-              <div className="flex justify-end w-full">
-                {!agentThree && (
-                  <button onClick={() => setShowAddSplit(true)}>
-                    Add Agent Split
+                {loading ? (
+                  <button className="btn h-11 w-full my-8 mx-0" disabled>
+                    Loading...
+                  </button>
+                ) : (
+                  <button
+                    className="btn h-11 w-full my-8 mx-0"
+                    onClick={addCommission}
+                    disabled={error}
+                  >
+                    Add Commission
                   </button>
                 )}
               </div>
-              {loading ? (
-                <button className="btn h-11 w-full my-8 mx-0" disabled>
-                  Loading...
-                </button>
-              ) : (
-                <button
-                  className="btn h-11 w-full my-8 mx-0"
-                  onClick={addCommission}
-                  disabled={error}
-                >
-                  Add Commission
-                </button>
-              )}
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

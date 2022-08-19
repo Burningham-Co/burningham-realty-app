@@ -114,7 +114,7 @@ const CommissionForm = ({
         </div>
 
         <div className="input-box">
-          <span className="data">Agent Brokerage Fee</span>
+          <span className="data">Transaction Fee</span>
           <select
             name="brokerageFee"
             type="number"
